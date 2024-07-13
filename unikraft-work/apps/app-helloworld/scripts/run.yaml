@@ -1,4 +1,0 @@
-runs:
-  - command: ""
-    memory: 64
-    networking: False

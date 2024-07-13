@@ -6,7 +6,6 @@
 struct page_pool* root_page_pool;
 extern uint8_t __mem_vm_begin, __mem_vm_end;
 
-// 增加调试信息的改进后的代码
 bool root_pool_set_up_bitmap(struct page_pool *root_pool) {
     size_t bitmap_nr_pages, bitmap_base, pageoff;
     struct ppages bitmap_pp;
@@ -40,9 +39,9 @@ bool root_pool_set_up_bitmap(struct page_pool *root_pool) {
     root_bitmap = (bitmap_t*)bitmap_pp.base;
     root_pool->bitmap = root_bitmap;
 
-    // 如果不-1会出现内存越界访问，目前找不到原因
-    INFO("Memset: address=0x%x, size=0x%x", (void*)root_pool->bitmap, (bitmap_nr_pages - 1) * PAGE_SIZE);
-    memset((void*)root_pool->bitmap, 0, (bitmap_nr_pages - 1) * PAGE_SIZE);
+    // mem=0x20000000, -0x1000; mem=0x60000000, -0x9000
+    INFO("Memset: address=0x%x, size=0x%x", (void*)root_pool->bitmap, (bitmap_nr_pages) * PAGE_SIZE);
+    memset((void*)root_pool->bitmap, 0, (bitmap_nr_pages) * PAGE_SIZE - 0x9000);
     INFO("Memset completed.");
 
     // 计算页偏移量并设置位图
@@ -84,7 +83,8 @@ void *mem_alloc_page(size_t nr_pages, bool phys_aligned) {
 bool pp_alloc(struct page_pool *pool, size_t nr_pages, bool aligned,
                      struct ppages *ppages) {
     bool ok = false;
-    size_t start, curr, bit, next_aligned;
+    size_t start, curr, next_aligned;
+    int bit; // bug: bit 若为 size_t 类型，会导致 bitmap_find_consec 函数返回值为 -1 时，无法进入 if 语句
 
     ppages->nr_pages = 0;
     if (nr_pages == 0) {
@@ -154,4 +154,41 @@ struct ppages mem_alloc_ppages(size_t nr_pages, bool aligned) {
     }
 
     return pages;
+}
+
+bool mem_free_page(void *page, size_t nr_pages) {
+    struct page_pool *pool = root_page_pool;
+    size_t bit;
+
+    // 检查输入参数
+    if (!page || nr_pages == 0) {
+        ERROR("Invalid arguments to mem_free_page.");
+        return false;
+    }
+
+    spin_lock(&pool->lock);
+
+    // 计算页面在位图中的偏移量
+    bit = ((size_t)page - pool->base) / PAGE_SIZE;
+
+    // 检查页面是否在合法范围内
+    if (bit >= pool->nr_pages) {
+        ERROR("Page address out of range.");
+        spin_unlock(&pool->lock);
+        return false;
+    }
+
+    // 释放连续的页面
+    bitmap_clear_consecutive(pool->bitmap, bit, nr_pages);
+    pool->free += nr_pages;
+
+    spin_unlock(&pool->lock);
+
+    INFO("Freed %u pages at address %x.", nr_pages, page);
+
+    return true;
+}
+
+size_t mem_get_free_pages() {
+    return root_page_pool->free;
 }

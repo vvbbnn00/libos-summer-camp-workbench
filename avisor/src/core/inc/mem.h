@@ -45,6 +45,7 @@ vaddr_t mem_alloc_map_dev(struct addr_space* as,
                              vaddr_t at, paddr_t pa, size_t nr_pages);  
 void mem_unmap(struct addr_space* as, vaddr_t at, size_t num_pages,
                     bool free_ppages);     
+bool mem_free_page(void *page, size_t nr_pages);
 /* Functions implemented in architecture dependent files */
 
 void as_arch_init(struct addr_space* as);

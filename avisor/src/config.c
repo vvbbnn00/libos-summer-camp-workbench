@@ -1,8 +1,13 @@
 #include "config.h"
+#include "entry.h"
 
 // TODO
 // VM_IMAGE(vm1, "./image/app-helloworld_kvm-arm64");
-VM_IMAGE(vm1, "./image/hello.bin");
+// VM_IMAGE(vm1, "./image/1.hypercall.bin");
+// VM_IMAGE(vm1, "./image/2.restore-to-latest-ckpt.bin");
+// VM_IMAGE(vm1, "./image/3.restore-to-specified-ckpt.bin");
+// VM_IMAGE(vm1, "./image/4.restart.bin");
+VM_IMAGE(vm1, "./image/output.bin");
 
 // DTB_IMAGE(dtb1, "./image/virt-gicv3.dtb");
 DTB_IMAGE(dtb1, "./image/virt.dtb");
@@ -17,7 +22,7 @@ struct config config = {
             .base_addr = 0x40100000, 
             .load_addr = VM_IMAGE_OFFSET(vm1),
             .size = VM_IMAGE_SIZE(vm1),
-            .entry = 0x0000000040101430, // 0x0000000040101b20,
+            .entry = ENTRY_POINT, // 0x0000000040101b20,
             .dmem_size = 0x8000000,
             .nr_cpus = 1,
             .nr_devs = 2,
@@ -25,7 +30,7 @@ struct config config = {
                 {
                     .id = 1,
                     .pa = 0x1C0B0000,
-                    .va = 0x1c090000,
+                    .va = 0x1C090000,
                     .size = 0x10000,
                     .interrupt_num = 1,
                     .interrupts = (irqid_t[]) {39}

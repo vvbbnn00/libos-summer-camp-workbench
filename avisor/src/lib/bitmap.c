@@ -1,4 +1,5 @@
 #include "bitmap.h"
+#include "util.h"
 
 size_t bitmap_find_nth(bitmap_t* map, size_t size, size_t nth, size_t start,
                         bool set) {

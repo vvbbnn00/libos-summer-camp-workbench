@@ -30,7 +30,7 @@ rm := rm
 # qemu
 qemu := qemu-system-aarch64
 gic_version := 2
-memory := 2g
+memory := 4g
 device := virt,virtualization=on
 cpu := cortex-a57
 num_cpu := 1

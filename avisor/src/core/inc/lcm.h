@@ -29,10 +29,14 @@ struct snapshot {
     char mem[0];
 };
 
-void checkpoint_snapshot_hanlder(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec);
-void restore_snapshot_hanlder(unsigned long iss, unsigned long arg0, unsigned long arg1, unsigned long arg2);
+void checkpoint_snapshot_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec);
+void restore_snapshot_handler(unsigned long iss, unsigned long arg0, unsigned long arg1, unsigned long arg2);
 void guest_halt_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec);
+void restart_vm_handler(unsigned long iss, unsigned long arg0, unsigned long arg1, unsigned long arg2);
 
 extern struct list_head ss_pool_list;
+
+static struct snapshot_pool* alloc_ss_pool();
+void restore_snapshot_handler_by_ss(struct snapshot* ss);
 
 #endif
