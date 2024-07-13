@@ -92,7 +92,9 @@ static inline void physicl_timer_init() {
     gic_set_enable(IRQ_TIMER, true);
 }
 
+// 初始化中断
 void interrupts_init() {
+    // 初始化体系结构相关的中断
     interrupts_arch_init();
 
     if (cpu()->id == CPU_MASTER) {

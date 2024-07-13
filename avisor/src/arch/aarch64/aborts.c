@@ -101,7 +101,7 @@ void aborts_data_lower(unsigned long iss, unsigned long far, unsigned long il, u
     vcpu_writepc(cpu()->vcpu, pc + pc_step);
 }
 
-void aborts_sync_hanlder() {  
+void aborts_sync_handler() {
     uint64_t hsr = sysreg_esr_el2_read();
     uint64_t ec = bit64_extract(hsr, ESR_EC_OFF, ESR_EC_LEN);
     uint64_t iss = bit64_extract(hsr, ESR_ISS_OFF, ESR_ISS_LEN);
@@ -111,9 +111,7 @@ void aborts_sync_hanlder() {
 
     if (ec == ESR_EC_DALEL) {
         aborts_data_lower(iss, far, il, ec);
-    }
-
-    if (ec == ESR_EC_HVC64) {
+    } else if (ec == ESR_EC_HVC64) { // 确保用 else if 防止多次进入
         arg0 = vcpu_readreg(cpu()->vcpu, 0);
         arg1 = vcpu_readreg(cpu()->vcpu, 1);
         arg2 = vcpu_readreg(cpu()->vcpu, 2);

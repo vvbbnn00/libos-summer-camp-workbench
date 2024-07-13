@@ -6,25 +6,48 @@
 struct page_pool* root_page_pool;
 extern uint8_t __mem_vm_begin, __mem_vm_end;
 
+// 增加调试信息的改进后的代码
 bool root_pool_set_up_bitmap(struct page_pool *root_pool) {
     size_t bitmap_nr_pages, bitmap_base, pageoff;
     struct ppages bitmap_pp;
     bitmap_t* root_bitmap;
 
+    // 计算位图所需的页面数
     bitmap_nr_pages = root_pool->nr_pages / (8 * PAGE_SIZE) +
-                           ((root_pool->nr_pages % (8 * PAGE_SIZE) != 0) ? 1 : 0);
+                      ((root_pool->nr_pages % (8 * PAGE_SIZE) != 0) ? 1 : 0);
+    INFO("Bitmap pages required: 0x%x, 0x%x, 0x%x", root_pool->nr_pages, 8 * PAGE_SIZE, bitmap_nr_pages);
 
+    // 检查页面池是否足够大以容纳位图
     if (root_pool->nr_pages <= bitmap_nr_pages) {
+        ERROR("Not enough pages in root pool to accommodate bitmap.");
         return false;
     }
-    bitmap_base = (size_t) &__mem_vm_end;
 
+    // 设置位图基地址
+    bitmap_base = (size_t) &__mem_vm_end;
+    INFO("Bitmap base address: 0x%x", (void*)bitmap_base);
+
+    // 获取位图的页面
     bitmap_pp = mem_ppages_get(bitmap_base, bitmap_nr_pages);
+    if (bitmap_pp.base == 0) {
+        // 内存分配失败，返回 false
+        ERROR("Failed to allocate pages for bitmap.");
+        return false;
+    }
+    INFO("Bitmap pages allocated: base=0x%x, nr_pages=0x%x", (void*)bitmap_pp.base, bitmap_pp.nr_pages);
+
+    // 初始化位图
     root_bitmap = (bitmap_t*)bitmap_pp.base;
     root_pool->bitmap = root_bitmap;
-    memset((void*)root_pool->bitmap, 0, bitmap_nr_pages * PAGE_SIZE);
 
+    // 如果不-1会出现内存越界访问，目前找不到原因
+    INFO("Memset: address=0x%x, size=0x%x", (void*)root_pool->bitmap, (bitmap_nr_pages - 1) * PAGE_SIZE);
+    memset((void*)root_pool->bitmap, 0, (bitmap_nr_pages - 1) * PAGE_SIZE);
+    INFO("Memset completed.");
+
+    // 计算页偏移量并设置位图
     pageoff = NUM_PAGES(bitmap_pp.base - root_pool->base);
+    INFO("Page offset: 0x%x", pageoff);
 
     bitmap_set_consecutive(root_pool->bitmap, pageoff, bitmap_pp.nr_pages);
     root_pool->free -= bitmap_pp.nr_pages;

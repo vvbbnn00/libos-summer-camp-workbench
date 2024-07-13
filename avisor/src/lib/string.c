@@ -29,12 +29,10 @@ void *memcpy(void *dst, const void *src, size_t count) {
 }
 
 void *memset(void *dest, int c, size_t count) {
-    uint8_t *d;
-    d = (uint8_t *)dest;
+    uint8_t *d = (uint8_t *)dest;
 
     while (count--) {
-        *d = c;
-        d++;
+        *d++ = (uint8_t)c;
     }
 
     return dest;

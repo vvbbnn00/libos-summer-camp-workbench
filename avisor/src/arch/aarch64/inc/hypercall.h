@@ -5,8 +5,9 @@ typedef enum {
     // Halt
     HYPERCALL_ISS_HALT = 0,
     // Snapshot
-    HYPERCALL_ISS_CHECKPOINT_SNAPSHOT,
-    HYPERCALL_ISS_RESTORE_SNAPSHOT,
+    HYPERCALL_ISS_CHECKPOINT_SNAPSHOT, // 1
+    HYPERCALL_ISS_RESTORE_SNAPSHOT, // 2
+    HYPERCALL_ISS_PRINT_MESSAGE, // 自定义的Hypercall类型,3
 } HYPERCALL_TYPE;
 
 typedef void (*hypercall_handler_t)(unsigned long, unsigned long, unsigned long, unsigned long);

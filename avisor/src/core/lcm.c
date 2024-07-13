@@ -66,7 +66,7 @@ static inline struct snapshot* get_ss_by_id(ssid_t id) {
     ERROR("invalid snapshot id");
 }
 
-void guest_halt_hanlder(unsigned long iss, unsigned long arg0, unsigned long arg1, unsigned long arg2) {
+void guest_halt_handler(unsigned long iss, unsigned long arg0, unsigned long arg1, unsigned long arg2) {
     unsigned long reason = arg0;
 
     switch (reason) {

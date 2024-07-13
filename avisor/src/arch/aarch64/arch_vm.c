@@ -84,7 +84,7 @@ void vcpu_arch_reset(struct vcpu* vcpu, vaddr_t entry) {
 
 
 void vcpu_arch_run(struct vcpu* vcpu) {
-    vm_entry();
+    vm_entry(); // 虚拟机的入口函数，汇编实现，在 exception.S 中
 }
 
 struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr) {
@@ -99,6 +99,7 @@ struct vcpu* vm_get_vcpu_by_mpidr(struct vm* vm, unsigned long mpidr) {
     return NULL;
 }
 
+// 初始化虚拟机的体系结构相关的部分
 void vm_arch_init(struct vm* vm, const struct vm_config* config) {
     if (vm->master == cpu()->id) {
         vgic_init(vm, &config->arch.gic);

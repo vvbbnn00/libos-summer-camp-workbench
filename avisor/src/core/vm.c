@@ -12,15 +12,17 @@
 
 struct vm_list vm_list;
 
+// 初始化虚拟机的地址空间
 static void vm_init_mem_regions(struct vm* vm, const struct vm_config* vm_config) { 
     vaddr_t va;
     paddr_t pa;
 
+    // 分配虚拟机的内存空间
     va = mem_alloc_map(&vm->as, NULL, vm_config->base_addr, NUM_PAGES(vm_config->size + vm_config->dmem_size), PTE_VM_FLAGS);
     if (va != vm_config->base_addr) {
         ERROR("va != vm's base_addr");
     }
-    mem_translate(&vm->as, va, &pa);
+    mem_translate(&vm->as, va, &pa); // 将虚拟地址转换为物理地址
     memcpy((void*)pa, (void*)vm_config->load_addr, vm_config->size);
     INFO("Copy vm%d to 0x%x, size = 0x%x", vm->id, pa, vm_config->size);
         
@@ -34,12 +36,14 @@ static void vm_init_mem_regions(struct vm* vm, const struct vm_config* vm_config
     INFO("Copy dtb to 0x%x, size = 0x%x", pa, config.dtb.size);
 }
 
+// 初始化虚拟机对象
 static struct vm* vm_allocation_init(struct vm_allocation* vm_alloc) {
     struct vm *vm = vm_alloc->vm;
     vm->vcpus = vm_alloc->vcpus;
     return vm;
 }
 
+// 初始化虚拟机的CPU
 void vm_cpu_init(struct vm* vm) {
     spin_lock(&vm->lock);
     vm->cpus |= (1UL << cpu()->id);
@@ -54,6 +58,7 @@ static vcpuid_t vm_calc_vcpu_id(struct vm* vm) {
     return vcpu_id;
 }
 
+// 初始化虚拟机的VCPUs（VCPU是虚拟CPU）
 void vm_vcpu_init(struct vm* vm, const struct vm_config* vm_config) {
     vcpuid_t vcpu_id = vm_calc_vcpu_id(vm);
     struct vcpu* vcpu = vm_get_vcpu(vm, vcpu_id);
@@ -64,7 +69,7 @@ void vm_vcpu_init(struct vm* vm, const struct vm_config* vm_config) {
     cpu()->vcpu = vcpu;
 
     vcpu_arch_init(vcpu, vm);
-    vcpu_arch_reset(vcpu, vm_config->entry);
+    vcpu_arch_reset(vcpu, vm_config->entry); // 将VCPUs的PC设置为虚拟机的入口地址
 }
 
 static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmid_t vm_id) {
@@ -81,26 +86,27 @@ static void vm_master_init(struct vm* vm, const struct vm_config* vm_config, vmi
     INIT_LIST_HEAD(&vm->emul_reg_list);
 }
 
+// 初始化虚拟机设备
 static void vm_init_dev(struct vm* vm, const struct vm_config* config) {
-    for (size_t i = 0; i < config->nr_devs; i++) {
+    for (size_t i = 0; i < config->nr_devs; i++) { // 遍历虚拟机的设备
         struct vm_dev_region* dev = &config->devs[i];
 
         size_t n = ALIGN(dev->size, PAGE_SIZE) / PAGE_SIZE;
 
         if (dev->va != INVALID_VA) {
-            mem_alloc_map_dev(&vm->as, (vaddr_t)dev->va, dev->pa, n);
+            mem_alloc_map_dev(&vm->as, (vaddr_t)dev->va, dev->pa, n); // 分配设备的内存空间
         }
 
         for (size_t j = 0; j < dev->interrupt_num; j++) {
-            interrupts_vm_assign(vm, dev->interrupts[j]);
+            interrupts_vm_assign(vm, dev->interrupts[j]); // 分配中断
         }
     }
 
-    if (io_vm_init(vm, config)) {
+    if (io_vm_init(vm, config)) { // 初始化虚拟机的IOMMU，IOMMU是输入输出内存管理单元
         for (size_t i = 0; i < config->nr_devs; i++) {
             struct vm_dev_region* dev = &config->devs[i];
             if (dev->id) {
-                if (!io_vm_add_device(vm, dev->id)){
+                if (!io_vm_add_device(vm, dev->id)){ // 添加设备到IOMMU
                     ERROR("Failed to add device to iommu");
                 }
             }
@@ -113,21 +119,18 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_co
     struct vm *vm = vm_allocation_init(vm_alloc);
     
     if (master) {
-        vm_master_init(vm, vm_config, vm_id);
+        vm_master_init(vm, vm_config, vm_id); // 初始化虚拟机的主CPU
     }
 
     vm_cpu_init(vm);
-
     cpu_sync_barrier(&vm->sync);
-
     vm_vcpu_init(vm, vm_config);
-    
     cpu_sync_barrier(&vm->sync);
-
     vm_arch_init(vm, vm_config);
 
     if (master) {
         vm_init_mem_regions(vm, vm_config);
+        INFO("VM[%d] MEM INIT", vm_id);
         vm_init_dev(vm, vm_config);
         // init address space first
         vm_rq_init(vm, vm_config);
@@ -141,7 +144,7 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_co
 
     INIT_LIST_HEAD(&vm->list);
     spin_lock(&vm_list.lock);
-    list_add(&vm->list, &vm_list.list);
+    list_add(&vm->list, &vm_list.list); // 将虚拟机添加到虚拟机列表
     spin_unlock(&vm_list.lock);
 
     return vm;
@@ -155,7 +158,7 @@ void vm_msg_broadcast(struct vm* vm, struct cpu_msg* msg) {
     for (size_t i = 0, n = 0; n < vm->nr_cpus - 1; i++) {
         if (((1U << i) & vm->cpus) && (i != cpu()->id)) {
             n++;
-            cpu_send_msg(i, msg);
+            cpu_send_msg(i, msg); // 发送消息
         }
     }
 }

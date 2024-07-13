@@ -49,7 +49,7 @@ struct arch_vm_platform {
     } smmu;
 };
 
-void vm_entry();
+void vm_entry(); // 虚拟机的入口函数
 
 static inline void vcpu_arch_inject_hw_irq(struct vcpu* vcpu, irqid_t id) {
     vgic_inject_hw(vcpu, id);

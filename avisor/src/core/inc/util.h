@@ -58,12 +58,39 @@
 #define MAX(a, b)		((a) >= (b) ? (a) : (b))
 #define MIN(a, b)		((a) <= (b) ? (a) : (b))
 
-static void inline __sleep(double x) {
+// 优化__sleep函数
+
+// 读取计时器频率（单位：Hz）
+static inline uint64_t read_cntfrq_el0(void) {
+    uint64_t cntfrq;
+    asm volatile ("mrs %0, cntfrq_el0" : "=r" (cntfrq));
+    return cntfrq;
+}
+
+// 读取当前计时器计数值
+static inline uint64_t read_cntpct_el0(void) {
+    uint64_t cntpct;
+    asm volatile ("mrs %0, cntpct_el0" : "=r" (cntpct));
+    return cntpct;
+}
+
+// 延迟函数，单位为毫秒
+static void inline __sleep(unsigned int milliseconds) {
+    uint64_t freq = read_cntfrq_el0();       // 获取计时器频率
+    uint64_t start = read_cntpct_el0();      // 获取开始计数值
+    uint64_t delay_ticks = (freq / 1000) * milliseconds; // 计算延迟所需的计数值
+
+    while (read_cntpct_el0() - start < delay_ticks);
+}
+
+// classic sleep
+static void inline __sleep_classic(unsigned int x) {
     uint64_t a = 100000000ul * x;
     uint64_t i = 0;
     
     while(i++ < a);
 }
+
 
 static inline bool range_in_range(unsigned long base1, unsigned long size1,
     unsigned long base2, unsigned long size2) {

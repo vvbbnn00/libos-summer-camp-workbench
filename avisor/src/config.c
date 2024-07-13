@@ -1,7 +1,8 @@
 #include "config.h"
 
 // TODO
-VM_IMAGE(vm1, "./image/app-helloworld_kvm-arm64");
+// VM_IMAGE(vm1, "./image/app-helloworld_kvm-arm64");
+VM_IMAGE(vm1, "./image/hello.bin");
 
 // DTB_IMAGE(dtb1, "./image/virt-gicv3.dtb");
 DTB_IMAGE(dtb1, "./image/virt.dtb");
@@ -16,7 +17,7 @@ struct config config = {
             .base_addr = 0x40100000, 
             .load_addr = VM_IMAGE_OFFSET(vm1),
             .size = VM_IMAGE_SIZE(vm1),
-            .entry = 0x0000000040101b20,
+            .entry = 0x0000000040101430, // 0x0000000040101b20,
             .dmem_size = 0x8000000,
             .nr_cpus = 1,
             .nr_devs = 2,

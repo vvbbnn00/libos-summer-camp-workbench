@@ -65,6 +65,7 @@ static inline void cpu_sync_init(struct cpu_synctoken* token, size_t n) {
     fence_ord_write();
 }
 
+// 等待所有CPU都到达这个位置
 static inline void cpu_sync_barrier(struct cpu_synctoken* token) {
     int val, exp_v;
     
@@ -75,6 +76,7 @@ static inline void cpu_sync_barrier(struct cpu_synctoken* token) {
     while (atomic_read(&token->count) < exp_v);
 }
 
+// 等待所有CPU都到达这个位置，并清除消息
 static inline void cpu_sync_and_clear_msgs(struct cpu_synctoken* token) {
     cpu_sync_barrier(token);
     size_t next_count = 0;

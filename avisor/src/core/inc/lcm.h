@@ -31,7 +31,7 @@ struct snapshot {
 
 void checkpoint_snapshot_hanlder(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec);
 void restore_snapshot_hanlder(unsigned long iss, unsigned long arg0, unsigned long arg1, unsigned long arg2);
-void guest_halt_hanlder(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec);
+void guest_halt_handler(unsigned long iss, unsigned long far, unsigned long il, unsigned long ec);
 
 extern struct list_head ss_pool_list;
 
