@@ -47,7 +47,7 @@ void hypercall_restart() {
 }
 
 int main() {
-    #define ACTION 1
+    #define ACTION 3
 
 	printf("Ciallo World, now perform action %d\n", ACTION);
     // 由于在restore时会回到checkpoint时的状态，所以在restore之后的代码不会被执行，会循环checkpoint之后的代码
@@ -95,7 +95,7 @@ int main() {
         hypercall_checkpoint_snapshot();
 
         // --- restore #1 ---
-        hypercall_restore_snapshot(1);
+        hypercall_restore_snapshot(3);
     }
     if (ACTION == 4) {
         printf("--- Restart ---\n");

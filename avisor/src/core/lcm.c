@@ -1,7 +1,7 @@
 #include "lcm.h"
 #include "string.h"
 
-#define NUM_MAX_SNAPSHOT_RESOTRE 1
+#define NUM_MAX_SNAPSHOT_RESOTRE 3
 
 struct snapshot* latest_ss;
 ssid_t latest_ss_id = 0;
@@ -12,8 +12,20 @@ size_t current_restore_cnt = 0;
 // 获取一个新的快照结构体指针
 static inline struct snapshot* get_new_ss() {
     struct snapshot_pool* ss_pool = list_last_entry(&ss_pool_list, struct snapshot_pool, list);
+    size_t pool_size = (config.vm->dmem_size + sizeof(struct snapshot)) * NUM_MAX_SNAPSHOT_RESOTRE;
+
     // 快照池已满, 分配一个新的快照池
     if (ss_pool->last + sizeof(struct snapshot) > ss_pool->base + ss_pool->size) { 
+        // 检查是否有足够的内存分配新的快照池，保守起见，至少空余两倍的快照池大小
+        if (pool_size * 2 > mem_get_free_pages() * PAGE_SIZE) {
+            // 若没有足够的内存，则释放最早的快照池
+            struct snapshot_pool* earliest_ss_pool = list_first_entry(&ss_pool_list, struct snapshot_pool, list);
+            list_del(&earliest_ss_pool->list);
+            mem_free_page((void*)earliest_ss_pool, NUM_PAGES(earliest_ss_pool->size));
+        }
+
+        // INFO("pool_size: %d, free_pages: %d", pool_size, mem_get_free_pages() * PAGE_SIZE);
+
         struct snapshot_pool* new_ss_pool = alloc_ss_pool();
         if (!new_ss_pool) {
             ERROR("Failed to allocate memory for new snapshot pool.");
