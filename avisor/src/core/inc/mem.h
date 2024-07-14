@@ -7,6 +7,12 @@
 #include "spinlock.h"
 #include "bitmap.h"
 
+struct shared_memory_device {
+    vaddr_t va;     // 虚拟地址
+    paddr_t pa;     // 物理地址
+    size_t size;    // 大小
+};
+
 struct ppages {
     paddr_t base;
     size_t nr_pages;
@@ -52,5 +58,7 @@ void as_arch_init(struct addr_space* as);
 bool mem_translate(struct addr_space* as, vaddr_t va, paddr_t* pa);
 
 extern struct page_pool* root_page_pool;
+size_t mem_get_free_pages();
+extern struct shared_memory_device* shared_mem;
 
 #endif /* MEM_H */

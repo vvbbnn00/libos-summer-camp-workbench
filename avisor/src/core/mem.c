@@ -5,6 +5,26 @@
 
 struct page_pool* root_page_pool;
 extern uint8_t __mem_vm_begin, __mem_vm_end;
+struct shared_memory_device* shared_mem;
+
+// 初始化共享内存
+void shared_memory_init() {
+    shared_mem = (struct shared_memory_device*)mem_alloc_page(NUM_PAGES(sizeof(struct shared_memory_device)), false);
+    shared_mem->va = SHARED_MEM_BASE;
+    shared_mem->size = SHARED_MEM_SIZE;
+    
+    // 将物理内存映射到虚拟地址空间
+    shared_mem->pa = (paddr_t)mem_alloc_page(NUM_PAGES(shared_mem->size), false);
+    if (shared_mem->pa == 0) {
+        ERROR("Failed to allocate shared memory.");
+        return;
+    }
+
+    // 测试用
+    memcpy((char*)shared_mem->pa, "Ciallo!\0", 8);
+
+    INFO("Shared memory initialized: va=0x%x, pa=0x%x, size=0x%x", shared_mem->va, shared_mem->pa, shared_mem->size);
+}
 
 bool root_pool_set_up_bitmap(struct page_pool *root_pool) {
     size_t bitmap_nr_pages,         // 用于记录内存位图所需的页面数 
@@ -77,6 +97,8 @@ void mem_init() {
         ERROR("ERROR.\n");
     }
     root_page_pool = root_pool;
+
+    shared_memory_init();
 
     INFO("MEM INIT");
 }

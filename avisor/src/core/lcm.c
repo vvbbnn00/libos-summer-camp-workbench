@@ -1,8 +1,6 @@
 #include "lcm.h"
 #include "string.h"
 
-#define NUM_MAX_SNAPSHOT_RESOTRE 3
-
 struct snapshot* latest_ss;
 ssid_t latest_ss_id = 0;
 struct list_head ss_pool_list;
@@ -12,7 +10,7 @@ size_t current_restore_cnt = 0;
 // 获取一个新的快照结构体指针
 static inline struct snapshot* get_new_ss() {
     struct snapshot_pool* ss_pool = list_last_entry(&ss_pool_list, struct snapshot_pool, list);
-    size_t pool_size = (config.vm->dmem_size + sizeof(struct snapshot)) * NUM_MAX_SNAPSHOT_RESOTRE;
+    size_t pool_size = (config.vm->dmem_size + sizeof(struct snapshot)) * NUM_MAX_SNAPSHOT_PER_POOL;
 
     // 快照池已满, 分配一个新的快照池
     if (ss_pool->last + sizeof(struct snapshot) > ss_pool->base + ss_pool->size) { 
@@ -47,7 +45,7 @@ static inline void update_ss_pool_last(size_t size) {
 // 分配一个新的快照池
 static struct snapshot_pool* alloc_ss_pool() {
     struct snapshot_pool* ss_pool;
-    size_t pool_size = (config.vm->dmem_size + sizeof(struct snapshot)) * NUM_MAX_SNAPSHOT_RESOTRE;
+    size_t pool_size = (config.vm->dmem_size + sizeof(struct snapshot)) * NUM_MAX_SNAPSHOT_PER_POOL;
 
     INFO("new snapshot pool size: %dMB", pool_size / 1024 / 1024);
     ss_pool = (struct snapshot_pool*) mem_alloc_page(NUM_PAGES(pool_size), false);
@@ -85,7 +83,6 @@ static inline struct snapshot* get_latest_ss() {
 static inline struct snapshot* get_ss_by_id(ssid_t id) {
     paddr_t ss;
     struct snapshot_pool* ss_pool;
-    int i = 0;
 
     list_for_each_entry(ss_pool, &ss_pool_list, list) {
         ss = ss_pool->base;

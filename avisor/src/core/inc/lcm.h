@@ -7,6 +7,7 @@
 
 #define NUM_MAX_SNAPSHOT_RESOTRE        1
 #define LATEST_SSID                    -1
+#define NUM_MAX_SNAPSHOT_PER_POOL       3
 
 //TODO: 移动到psci.h
 #define PSCI_FNID_SYSTEM_OFF            0x84000008

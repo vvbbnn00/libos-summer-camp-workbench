@@ -112,7 +112,13 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config) {
             }
         }
     }
-      
+
+    // 初始化共享内存设备
+    if (shared_mem != NULL) {
+        mem_alloc_map_dev(&vm->as, (vaddr_t)shared_mem->va, shared_mem->pa, NUM_PAGES(shared_mem->size));
+    } else {
+        WARNING("No shared memory device");
+    }      
 }
 
 void __print_vm_config(const struct vm_config* config) {
@@ -141,7 +147,7 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_co
     vm_arch_init(vm, vm_config);
 
     if (master) {
-        __print_vm_config(vm_config);
+        // __print_vm_config(vm_config);
         vm_init_mem_regions(vm, vm_config);
         INFO("VM[%d] MEM INIT", vm_id);
         vm_init_dev(vm, vm_config);

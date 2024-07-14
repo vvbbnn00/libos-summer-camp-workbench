@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h> 
 
 #define HYPERCALL_ISS_CHECKPOINT_SNAPSHOT "1"
 #define HYPERCALL_ISS_RESTORE_SNAPSHOT "2"
@@ -6,6 +8,8 @@
 #define HYPERCALL_ISS_RESTART "4"
 
 #define LATEST_SNAPSHOT -1
+
+#define SHARED_MEM_BASE 0x70000000
 
 void hypercall_print_message(char *message) {
     register unsigned long x0 __asm__("x0") = (unsigned long)message;
@@ -47,7 +51,7 @@ void hypercall_restart() {
 }
 
 int main() {
-    #define ACTION 3
+    #define ACTION 6
 
 	printf("Ciallo World, now perform action %d\n", ACTION);
     // 由于在restore时会回到checkpoint时的状态，所以在restore之后的代码不会被执行，会循环checkpoint之后的代码
@@ -100,6 +104,21 @@ int main() {
     if (ACTION == 4) {
         printf("--- Restart ---\n");
         hypercall_restart();
+    }
+    if (ACTION == 5) {
+        char *shared_mem = (char *)SHARED_MEM_BASE;
+        sleep(2);
+        printf("\n\n --- Read shared memory ---\n");
+        while (1) {
+            printf("Shared memory: %s\n", shared_mem);
+            sleep(1);
+        }
+    }
+    if (ACTION == 6) {
+        // Wait 5 second and then write to shared memory
+        sleep(5);
+        char *shared_mem = (char *)SHARED_MEM_BASE;
+        strcpy(shared_mem, "Hello, shared memory!");
     }
     return 0;
 }

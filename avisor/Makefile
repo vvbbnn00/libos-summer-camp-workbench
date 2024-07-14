@@ -33,7 +33,7 @@ gic_version := 2
 memory := 4g
 device := virt,virtualization=on
 cpu := cortex-a57
-num_cpu := 1
+num_cpu := 2
 iommu := none
 
 # wildcards

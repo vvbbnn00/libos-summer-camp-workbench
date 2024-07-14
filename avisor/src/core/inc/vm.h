@@ -138,6 +138,7 @@ static inline void vcpu_inject_irq(struct vcpu *vcpu, irqid_t id) {
 }
 
 struct vm* get_vm_by_id(vmid_t id);
+void map_shared_memory_to_vm(struct vm* vm);
 
 void vm_arch_init(struct vm* vm, const struct vm_config* config);
 void vcpu_arch_init(struct vcpu* vcpu, struct vm* vm);
