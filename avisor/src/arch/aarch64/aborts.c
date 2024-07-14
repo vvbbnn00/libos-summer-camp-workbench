@@ -111,7 +111,7 @@ void aborts_sync_handler() {
 
     if (ec == ESR_EC_DALEL) {
         aborts_data_lower(iss, far, il, ec);
-    } else if (ec == ESR_EC_HVC64) { // 确保用 else if 防止多次进入
+    } else if (ec == ESR_EC_HVC64) {
         arg0 = vcpu_readreg(cpu()->vcpu, 0);
         arg1 = vcpu_readreg(cpu()->vcpu, 1);
         arg2 = vcpu_readreg(cpu()->vcpu, 2);

@@ -87,45 +87,48 @@
 .global vector
 vector:
 
-// ----------------------------------------
+// --------- EL0 异常处理程序 ------------
 // 异常向量表
-sp_el0_sync:        b       .   // EL0 异步异常
+sp_el0_sync:        b       .   // EL0 同步异常
 .align 7 , 0xff
 sp_el0_irq:         b       .   // EL0 中断
 .align 7 , 0xff
 sp_el0_fiq:         b       .   // EL0 快速中断
 .align 7 , 0xff
 sp_el0_serror:      b       .   // EL0 同步错误
-// ----------------------------------------
+
+// --------- ELx 异常处理程序 ------------
 .align 7 , 0xff
 sp_elx_sync:        b       .   // 高级异常级别的同步异常
 .align 7 , 0xff
-sp_elx_irq:
-	SAVE_CPU        // 保存 CPU 状态
-	bl gic_handle   // 跳转到 GIC 处理函数
-	b restore_cpu   // 跳转到恢复 CPU 状态函数
+sp_elx_irq:                    // 高级异常级别的中断
+    SAVE_CPU                // 保存 CPU 状态
+    bl gic_handle           // 跳转到 GIC 处理函数
+    b restore_cpu           // 跳转到恢复 CPU 状态函数
 .align 7 , 0xff
 sp_elx_fiq:         b       .   // 高级异常级别的快速中断
 .align 7 , 0xff
 sp_elx_serror:      b       .   // 高级异常级别的同步错误
-// ----------------------------------------
+
+// --------- EL1 异常处理程序 (64 位) ------------
 .align 7 , 0xff
-lower_64_sync:
-	VM_EXIT         // 执行 VM_EXIT 宏
-	bl aborts_sync_handler // 跳转到同步异常处理函数 BUG: Fix typo
-	b vm_entry      // 跳转到虚拟机入口
+lower_64_sync:                // 64 位下的同步异常
+    VM_EXIT                  // 执行 VM_EXIT 宏
+    bl aborts_sync_handler   // 跳转到同步异常处理函数
+    b vm_entry               // 跳转到虚拟机入口
 .align 7 , 0xff
-lower_64_irq:
-	VM_EXIT         // 执行 VM_EXIT 宏
-	bl gic_handle   // 跳转到 GIC 处理函数
-	//TODO: 放置 task_struct 到栈顶后修改此处
-	bl try_reschedule // 跳转到重新调度函数
-	b vm_entry      // 跳转到虚拟机入口
+lower_64_irq:                 // 64 位下的中断
+    VM_EXIT                  // 执行 VM_EXIT 宏
+    bl gic_handle            // 跳转到 GIC 处理函数
+    // TODO: 放置 task_struct 到栈顶后修改此处
+    bl try_reschedule        // 跳转到重新调度函数
+    b vm_entry               // 跳转到虚拟机入口
 .align 7 , 0xff
 lower_64_fiq:       b       .   // 64 位下的快速中断
 .align 7 , 0xff
 lower_64_serror:    b       .   // 64 位下的同步错误
-// ----------------------------------------
+
+// --------- EL1 异常处理程序 (32 位) ------------
 .align 7 , 0xff
 lower_32_sync:      b       .   // 32 位下的同步异常
 .align 7 , 0xff

@@ -6,7 +6,7 @@
 void print_message_handler(unsigned long iss, unsigned long arg0, unsigned long arg1, unsigned long arg2)
 {
     INFO("Hypercall message, arg0: %lu, arg1: %lu, arg2: %lu", arg0, arg1, arg2);
-    // 打印消息，假设 arg0 是消息的地址
+    // 打印消息，arg0 是消息的地址
     INFO("Hypercall message: %s", (char *)arg0);
 }
 
