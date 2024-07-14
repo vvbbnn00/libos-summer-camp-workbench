@@ -2,9 +2,9 @@
 
 ### 1. 实现了虚拟机间的共享内存通信
 
-我的想法是将共享内存看作一种设备。在加载虚拟机时，将这个设备映射到虚拟机的内存空间中。这样，虚拟机就可以通过访问这个设备来实现共享内存通信。
+我的想法是将共享内存视为一种设备。在加载虚拟机时，将该设备映射到虚拟机的内存空间中，从而实现共享内存通信。
 
-具体地，我定义了shared_memory_device结构体，用于描述共享内存设备，具体定义如下：
+具体地，我定义了`shared_memory_device`结构体，用于描述共享内存设备，其定义如下：
 
 ```c
 struct shared_memory_device {
@@ -14,7 +14,7 @@ struct shared_memory_device {
 };
 ```
 
-在Hypervisor初始化过程中，我分配了一块物理内存，然后在虚拟机初始化过程中，将这块物理内存映射到虚拟地址空间中。这样，虚拟机就可以通过访问这个虚拟地址来访问共享内存。Hypervisor的初始化代码如下：
+在Hypervisor初始化过程中，我分配了一块物理内存，并在虚拟机初始化过程中，将这块物理内存映射到虚拟地址空间中。这样，虚拟机可以通过访问这个虚拟地址来访问共享内存。Hypervisor的初始化代码如下：
 
 ```c
 // 初始化共享内存
@@ -53,7 +53,7 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config) {
 }
 ```
 
-这样，虚拟机就可以通过访问`shared_mem->va`来访问共享内存（在这里，这个虚拟地址被设定为了`0x70000000`，它可以在`mem_cfg.h`中修改）。
+这样，虚拟机就可以通过访问`shared_mem->va`来访问共享内存（在这里，这个虚拟地址被设定为了`0x70000000`，可以在`mem_cfg.h`中修改）。
 
 #### 验证
 
@@ -82,31 +82,31 @@ while (1) {
 
 // ...
 
-// Wait 5 second and then write to shared memory
+// 等待5秒然后写入共享内存
 sleep(5);
 char *shared_mem = (char *)SHARED_MEM_BASE;
 strcpy(shared_mem, "Hello, shared memory!");
 ```
 
-验证结果如下图：
+验证结果如下图所示：
 
 ![alt text](image.png)
 
-可见，虚拟机1读取到的内容从一开始的`Ciallo!`变成了`Hello, shared memory!`，说明共享内存通信成功。
+可以看到，虚拟机1读取到的内容从一开始的`Ciallo!`变成了`Hello, shared memory!`，说明共享内存通信成功。
 
 #### 不足
 
-这种实现方式只是一个简单的共享内存通信方案，它并没有考虑到多个虚拟机同时访问共享内存的情况。在实际应用中，可能需要考虑共享内存的并发访问问题，也许需要引入锁机制来保证共享内存的一致性。
+这种实现方式只是一个简单的共享内存通信方案，并没有考虑到多个虚拟机同时访问共享内存的情况。实际应用中，可能需要考虑共享内存的并发访问问题，也许需要引入锁机制来保证共享内存的一致性。
 
-同时，我们目前的方案是直接将共享内存大小固定在`SHARED_MEM_SIZE`，入口地址固定在`SHARED_MEM_BASE`，这样的设计会导致共享内存的大小和位置都是固定的。而且，我们也没有提供多个共享内存设备的支持，与动态释放共享内存的支持，这会丧失一些灵活性。
+此外，目前的方案是将共享内存大小固定在`SHARED_MEM_SIZE`，入口地址固定在`SHARED_MEM_BASE`，这会导致共享内存的大小和位置都是固定的。我们也没有提供多个共享内存设备的支持，也没有动态释放共享内存的支持，这会丧失一些灵活性。
 
 ### 2. 优化了快照池的实现
 
 在原程序中，快照的创建是通过直接返回当前快照池的最后一个快照指针来实现的。这种实现方式有一个缺陷，即当快照池满时，没有做任何处理，可能会导致一些意料之外的问题。
 
-为了解决这个问题，我们在获取快照时，增加了一个判断：当快照池满时，自动新建一个快照池。这样，就可以保证快照池不会因为满了而导致无法创建新的快照。同时，为了防止内存不足，我们增加了一个功能，也就是当内存不足时，释放最早的快照池。
+为了解决这个问题，我们在获取快照时，增加了一个判断：当快照池满时，自动新建一个快照池。这样，就可以保证快照池不会因为满了而导致无法创建新的快照。同时，为了防止内存不足，我们增加了一个功能，即当内存不足时，释放最早的快照池。
 
-为了实现上述功能，我们首先实现了内存释放函数`mem_free_page`，用于释放指定地址的内存页，同时，也实现了获取内存剩余空间函数`mem_get_free_pages`，用于获取当前内存剩余空间。这一部分的代码如下：
+为了实现上述功能，我们首先实现了内存释放函数`mem_free_page`，用于释放指定地址的内存页，同时也实现了获取内存剩余空间函数`mem_get_free_pages`，用于获取当前内存剩余空间。代码如下：
 
 ```c
 bool mem_free_page(void *page, size_t nr_pages) {
@@ -147,7 +147,7 @@ size_t mem_get_free_pages() {
 }
 ```
 
-然后，我们在创建快照时，我们对内存剩余空间进行判断，如果内存不足，则释放最早的快照池，然后再次尝试创建快照。这一部分的代码如下：
+然后，在创建快照时，我们对内存剩余空间进行判断，如果内存不足，则释放最早的快照池，然后再次尝试创建快照。代码如下：
 
 ```c
 // 获取一个新的快照结构体指针
@@ -155,7 +155,7 @@ static inline struct snapshot* get_new_ss() {
     struct snapshot_pool* ss_pool = list_last_entry(&ss_pool_list, struct snapshot_pool, list);
     size_t pool_size = (config.vm->dmem_size + sizeof(struct snapshot)) * NUM_MAX_SNAPSHOT_PER_POOL;
 
-    // 快照池已满, 分配一个新的快照池
+    // 快照池已满，分配一个新的快照池
     if (ss_pool->last + sizeof(struct snapshot) > ss_pool->base + ss_pool->size) { 
         // 检查是否有足够的内存分配新的快照池，保守起见，至少空余两倍的快照池大小
         if (pool_size * 2 > mem_get_free_pages() * PAGE_SIZE) {
@@ -179,11 +179,11 @@ static inline struct snapshot* get_new_ss() {
 }
 ```
 
-在实现这个功能的过程中，我们还发现了 [3. 修复了选择指定ID快照时存在的逻辑错误](#3-修复了选择指定id快照时存在的逻辑错误) 和 [4. 修复了原项目中内存满时不报错的问题](#4-修复了原项目中内存满时不报错的问题) 这两个问题，将在下面的章节中详细介绍。
+在实现这个功能的过程中，我们还发现并修复了其他问题，将在下面的章节中详细介绍。
 
 ### 3. 修复了选择指定ID快照时存在的逻辑错误
 
-原先项目的get_ss_by_id函数存在一些逻辑的错误，具体而言，它在判断快照ID时，不是通过检查快照的`ss_id`字段，而是通过一个计数器`i`来判断。这样的实现方式会导致当快照池中的快照被删除时，`i`的值会出现错误，从而导致无法正确选择指定ID的快照。同时，由于当我们找到最后一个快照以后，`(struct snapshot*)ss)->size`会变成0，因此，实际上，当我们没有找到指定ID的快照时，会返回一个错误的快照指针，这会导致一些意料之外的问题。
+原先项目的`get_ss_by_id`函数存在一些逻辑错误。具体而言，它在判断快照ID时，不是通过检查快照的`ss_id`字段，而是通过一个计数器`i`来判断。这样的实现方式会导致当快照池中的快照被删除时，`i`的值会出现错误，从而导致无法正确选择指定ID的快照。同时，由于当我们找到最后一个快照以后，`((struct snapshot*)ss)->size`会变成0，因此，实际上，当我们没有找到指定ID的快照时，会返回一个错误的快照指针，这会导致一些意料之外的问题。
 
 ```c
 static inline struct snapshot* get_ss_by_id(ssid_t id) {
@@ -213,11 +213,10 @@ static inline struct snapshot* get_ss_by_id(ssid_t id) {
 static inline struct snapshot* get_ss_by_id(ssid_t id) {
     paddr_t ss;
     struct snapshot_pool* ss_pool;
-    int i = 0;
 
     list_for_each_entry(ss_pool, &ss_pool_list, list) {
         ss = ss_pool->base;
-        // feat: 优化快照查找
+        // 优化快照查找
         while (ss + ((struct snapshot*)ss)->size <= ss_pool->base + ss_pool->size && ((struct snapshot*)ss)->size > 0) {
             if (((struct snapshot*)ss)->ss_id == id) {
                 return (struct snapshot*) ss;
@@ -232,7 +231,7 @@ static inline struct snapshot* get_ss_by_id(ssid_t id) {
 
 ### 4. 修复了原项目中内存满时不报错的问题
 
-在原项目中，当遇到内存不足时，实际上程序不会进行任何的报错，但是会卡在那里，不会进行下一步的操作。经过我对代码的仔细分析，发现问题出现在`mem.c`的`pp_alloc`函数中，由于在分配内存过程中需要找到可用的内存页，而在没有找到可用内存页时，变量`bit`会变为`-1`，当检测到`bit < 0`时，会则会提示内存分配错误。而在这其中，变量`bit`的类型被设置为了`size_t`，这是一个无符号整数，因此`bit`不可能小于0，所以在这种情况下，程序不会报错，而是不断地循环查找内存页，导致程序卡在那里：
+在原项目中，当遇到内存不足时，程序不会报错，而是卡在那里，不会进行下一步的操作。经过对代码的仔细分析，发现问题出现在`mem.c`的`pp_alloc`函数中，由于在分配内存过程中需要找到可用的内存页，而在没有找到可用内存页时，变量`bit`会变为`-1`。但由于`bit`的类型被设置为`size_t`（无符号整数），所以`bit`不可能小于0，这导致程序不断地循环查找内存页，卡在那里：
 
 ```c
 
@@ -268,7 +267,7 @@ bool pp_alloc(struct page_pool *pool, size_t nr_pages, bool aligned,
                      struct ppages *ppages) {
     bool ok = false;
     size_t start, curr, next_aligned;
-    int bit; // bug: bit 若为 size_t 类型，会导致 bitmap_find_consec 函数返回值为 -1 时，无法进入 if 语句
+    int bit; // bit 若为 size_t 类型，会导致 bitmap_find_consec 函数返回值为 -1 时，无法进入 if 语句
 
     // ...
 
@@ -326,7 +325,7 @@ bool root_pool_set_up_bitmap(struct page_pool *root_pool) {
 }
 ```
 
-代码中，在分配完毕内存后，他调用了`bitmap_set_consecutive`函数，将这部分内存标记为已经分配，同时，减去了`root_pool->free`的值，这说明这部分内存已经被分配，但是很明显，我们在分配内存的时候，是从`__mem_vm_end`开始分配的，这与预期不符，我们在分配前，应当将`bitmap_base`减去`bitmap_nr_pages * PAGE_SIZE`，来预留这部分内存，这样就不会造成内存泄漏的问题。
+代码中，在分配完毕内存后，调用了`bitmap_set_consecutive`函数，将这部分内存标记为已分配，同时减去了`root_pool->free`的值，说明这部分内存已被分配。但实际情况是，我们在分配前应当将`bitmap_base`减去`bitmap_nr_pages * PAGE_SIZE`，来预留这部分内存，从而避免内存泄漏：
 
 ```c
     // ...
@@ -337,7 +336,7 @@ bool root_pool_set_up_bitmap(struct page_pool *root_pool) {
 
 ### 6. 实现了虚拟机重启功能
 
-在实现快照的过程中，我也顺便实现了虚拟机的重启功能。该功能实际上就是将虚拟机的内存状态恢复到最初的状态，然后重置虚拟机的vCPU。具体实现如下：
+在实现快照的过程中，我顺便实现了虚拟机的重启功能。该功能将虚拟机的内存状态恢复到最初状态，然后重置虚拟机的vCPU。具体实现如下：
 
 ```c
 // 重启虚拟机
@@ -360,7 +359,7 @@ void restart_vm() {
 
 ```
 
-为了验证这个功能，我定义了`restart_vm_handler`和`HYPERCALL_ISS_RESTART`，以确保其能够被通过Hypercall调用，然后，我在`main.c`中定义了一个`hypercall_restart`的函数，用于在虚拟机内部调用这个Hypercall，从而实现虚拟机的重启。
+为了验证这个功能，我定义了`restart_vm_handler`和`HYPERCALL_ISS_RESTART`，以确保其能够通过Hypercall调用。然后，我在`main.c`中定义了一个`hypercall_restart`函数，用于在虚拟机内部调用这个Hypercall，从而实现虚拟机的重启。
 
 ```c
 void hypercall_restart() {
@@ -373,10 +372,10 @@ void hypercall_restart() {
 }
 ```
 
-实验结果如下，可以看到，虚拟机成功重启，并且内存状态被恢复到了最初的状态：
+实验结果如下，可以看到，虚拟机成功重启，并且内存状态被恢复到最初状态：
 
 ![alt text](image-2.png)
 
-### 7. 改正了原项目中一些拼写错误
+### 7. 改正了原项目中的拼写错误
 
-在阅读原项目代码的过程中，我发现了一些拼写错误，例如`restore_snapshot_handler`被错误拼成了`restore_snapshot_hanlder`等，我将这些拼写错误进行了修正。
+在阅读原项目代码的过程中，我发现了一些拼写错误，例如`restore_snapshot_handler`被错误拼成了`restore_snapshot_hanlder`等。我已将这些拼写错误进行了修正。
