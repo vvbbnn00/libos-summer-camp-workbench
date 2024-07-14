@@ -13,7 +13,7 @@ void shared_memory_init() {
     shared_mem->va = SHARED_MEM_BASE;
     shared_mem->size = SHARED_MEM_SIZE;
     
-    // 将物理内存映射到虚拟地址空间
+    // 分配物理内存
     shared_mem->pa = (paddr_t)mem_alloc_page(NUM_PAGES(shared_mem->size), false);
     if (shared_mem->pa == 0) {
         ERROR("Failed to allocate shared memory.");

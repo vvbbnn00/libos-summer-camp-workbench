@@ -1,4 +1,4 @@
-// 运行于main之前，用于初始化cpu，设置栈，设置中断向量表等
+// 运行于main之前，用于初始化cpu
 #include "mem_cfg.h"
 
 .global start

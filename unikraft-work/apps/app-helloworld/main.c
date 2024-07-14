@@ -99,7 +99,7 @@ int main() {
         hypercall_checkpoint_snapshot();
 
         // --- restore #1 ---
-        hypercall_restore_snapshot(3);
+        hypercall_restore_snapshot(1);
     }
     if (ACTION == 4) {
         printf("--- Restart ---\n");

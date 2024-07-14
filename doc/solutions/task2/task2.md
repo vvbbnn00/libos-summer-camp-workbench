@@ -1,4 +1,4 @@
-## Solution of Task2
+## Task2
 
 ### 1. Hypercall 是怎么发起和被处理的?
 
