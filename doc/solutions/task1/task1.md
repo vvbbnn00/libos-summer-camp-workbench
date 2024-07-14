@@ -117,23 +117,53 @@ mv entry_point.h ../../../avisor/src/entry.h
 ### 提示
 #### 1. 作为一个1型Hypervisor, 在缺少文件系统的情况下，Avisor是如何读取镜像文件的？
 
-在Hypervisor级别，没有文件系统的概念，所有操作都是基于块设备的。Hypervisor直接处理虚拟机对块设备的读写请求，将这些请求映射到实际的镜像文件的偏移位置进行操作。
-
-在Avisor的`vm.c`源代码中，`vm_init_mem_regions`函数负责将镜像文件从宿主机内存复制到虚拟机内存：
-
+Avisor的`vm_init_mem_regions`函数负责将镜像文件从宿主机内存复制到虚拟机内存。在代码中，通过`memcpy`函数将镜像文件从指定的宿主机内存地址复制到虚拟机的物理内存地址。这段代码在`vm.c`文件中实现：
 ```c
 static void vm_init_mem_regions(struct vm* vm, const struct vm_config* vm_config) {
-    // ... 一些初始化操作
-    memcpy((void*)pa, (void*)vm_config->load_addr, vm_config->size); // 这里将镜像文件从宿主机内存复制到虚拟机内存
+    // 一些初始化操作...
+    memcpy((void*)pa, (void*)vm_config->load_addr, vm_config->size); // 将镜像文件从宿主机内存复制到虚拟机内存
     INFO("Copy vm%d to 0x%x, size = 0x%x", vm->id, pa, vm_config->size);
 
-    // ... 一些初始化操作
-    memcpy((void*)pa, (void*)config.dtb.load_addr, config.dtb.size); // 这里将dtb文件从宿主机内存复制到虚拟机内存（dtb是设备树文件）
+    // 一些初始化操作...
+    memcpy((void*)pa, (void*)config.dtb.load_addr, config.dtb.size); // 将dtb文件从宿主机内存复制到虚拟机内存（dtb是设备树文件）
     INFO("Copy dtb to 0x%x, size = 0x%x", pa, config.dtb.size);
 }
 ```
 
-从代码分析来看，该函数将镜像文件从宿主机的内存地址复制到虚拟机的内存地址，并将虚拟地址转换为物理地址。这些操作通过调用`mem_alloc_map`和`mem_translate`函数实现。
+在`main.ld`链接脚本中，指定了虚拟机镜像和设备树文件在内存中的位置，这些内存地址在编译时被固定，确保了在启动时镜像文件和设备树文件的位置：
+```c
+.dtb_images 0x40000000:
+{
+    KEEP(*(.dtb_image*))
+}
+.vm_images 0x40100000:
+{
+    KEEP(*(.vm_image*))
+    . = . + 0x8000000;
+}
+```
+
+在`config.c`文件中，定义了虚拟机镜像和设备树文件的加载地址和大小，这些信息在`vm_init_mem_regions`函数中被使用：
+```c
+struct config config = {
+    // ...
+    .vm = (struct vm_config[]) {
+        {
+            .base_addr = 0x40100000, 
+            .load_addr = VM_IMAGE_OFFSET(vm1),
+            .size = VM_IMAGE_SIZE(vm1),
+            // 其他配置项
+        }
+    },
+    .dtb = {
+       .base_addr = 0x40000000,
+       .load_addr = DTB_IMAGE_OFFSET(dtb1),
+       .size = DTB_IMAGE_SIZE(dtb1),
+    }
+};
+```
+
+综上所述，Avisor通过在宿主机内存中预先加载镜像文件和设备树文件，并在启动时将这些文件从宿主机内存复制到虚拟机内存中，来实现镜像文件的读取。这样，即使没有文件系统，Avisor也能够正确初始化虚拟机。
 
 #### 2. 在其他配置不更改的情况下，想要正确执行一个程序，第一步是什么？换句话说，第一个要知道的信息是什么？这一步在Avisor中是怎么体现的？
 

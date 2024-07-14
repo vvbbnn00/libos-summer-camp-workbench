@@ -7,7 +7,8 @@ struct page_pool* root_page_pool;
 extern uint8_t __mem_vm_begin, __mem_vm_end;
 
 bool root_pool_set_up_bitmap(struct page_pool *root_pool) {
-    size_t bitmap_nr_pages, bitmap_base, pageoff;
+    size_t bitmap_nr_pages,         // 用于记录内存位图所需的页面数 
+           bitmap_base, pageoff;    // 用于记录位图的基地址和页偏移量
     struct ppages bitmap_pp;
     bitmap_t* root_bitmap;
 
@@ -23,8 +24,11 @@ bool root_pool_set_up_bitmap(struct page_pool *root_pool) {
     }
 
     // 设置位图基地址
-    bitmap_base = (size_t) &__mem_vm_end;
-    INFO("Bitmap base address: 0x%x", (void*)bitmap_base);
+    // BUG: 由于bitmap_base在虚拟机的最后开始分配内存，因此，必须为其预留空间
+    // 以防止覆盖虚拟机的内存，如果不预留空间，会出现预料之外的问题（例如输出乱码）
+    size_t bitmap_size = bitmap_nr_pages * PAGE_SIZE;
+    bitmap_base = (size_t) &__mem_vm_end - bitmap_size;
+    INFO("Bitmap base address: 0x%x, reserved size: 0x%x", bitmap_base, bitmap_size);
 
     // 获取位图的页面
     bitmap_pp = mem_ppages_get(bitmap_base, bitmap_nr_pages);
@@ -39,9 +43,8 @@ bool root_pool_set_up_bitmap(struct page_pool *root_pool) {
     root_bitmap = (bitmap_t*)bitmap_pp.base;
     root_pool->bitmap = root_bitmap;
 
-    // mem=0x20000000, -0x1000; mem=0x60000000, -0x9000
     INFO("Memset: address=0x%x, size=0x%x", (void*)root_pool->bitmap, (bitmap_nr_pages) * PAGE_SIZE);
-    memset((void*)root_pool->bitmap, 0, (bitmap_nr_pages) * PAGE_SIZE - 0x9000);
+    memset((void*)root_pool->bitmap, 0, (bitmap_nr_pages) * PAGE_SIZE);
     INFO("Memset completed.");
 
     // 计算页偏移量并设置位图
@@ -58,6 +61,8 @@ void mem_init() {
     static struct mem_region root_mem_region;
     struct page_pool *root_pool;
 
+    INFO("mem_vm_begin: 0x%x, mem_vm_end: 0x%x, size= %u MB", &__mem_vm_begin, &__mem_vm_end, (&__mem_vm_end - &__mem_vm_begin) / 1024 / 1024);
+
     root_mem_region.base = (size_t) &__mem_vm_begin;
     root_mem_region.size = (size_t) (&__mem_vm_end - &__mem_vm_begin);
 
@@ -65,6 +70,8 @@ void mem_init() {
     root_pool->base = ALIGN(root_mem_region.base, PAGE_SIZE);
     root_pool->nr_pages = root_mem_region.size / PAGE_SIZE;
     root_pool->free = root_pool->nr_pages;
+
+    INFO("Root pool: base=0x%x, nr_pages=0x%x", root_pool->base, root_pool->nr_pages);
     
     if (!root_pool_set_up_bitmap(&root_mem_region.page_pool)) {
         ERROR("ERROR.\n");

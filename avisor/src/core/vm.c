@@ -115,6 +115,18 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config) {
       
 }
 
+void __print_vm_config(const struct vm_config* config) {
+    INFO("VM CONFIG: base_addr=0x%x, size=0x%x, dmem_size=0x%x, entry=0x%x, nr_cpus=%d, nr_devs=%d",
+        config->base_addr, config->size, config->dmem_size, config->entry, config->nr_cpus, config->nr_devs);
+    for (size_t i = 0; i < config->nr_devs; i++) {
+        INFO("DEV[%d]: va=0x%x, pa=0x%x, size=0x%x, interrupt_num=%d, id=%d",
+            i, config->devs[i].va, config->devs[i].pa, config->devs[i].size, config->devs[i].interrupt_num, config->devs[i].id);
+        for (size_t j = 0; j < config->devs[i].interrupt_num; j++) {
+            INFO("INTERRUPT[%d]: %d", j, config->devs[i].interrupts[j]);
+        }
+    }
+}
+
 struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_config, bool master, vmid_t vm_id) {
     struct vm *vm = vm_allocation_init(vm_alloc);
     
@@ -129,6 +141,7 @@ struct vm* vm_init(struct vm_allocation* vm_alloc, const struct vm_config* vm_co
     vm_arch_init(vm, vm_config);
 
     if (master) {
+        __print_vm_config(vm_config);
         vm_init_mem_regions(vm, vm_config);
         INFO("VM[%d] MEM INIT", vm_id);
         vm_init_dev(vm, vm_config);

@@ -10,7 +10,7 @@
 #define AVISOR_BASE     0x40000000      // AVISOR 的基地址
 #define CPU_BASE        0x50000000      // CPU 的基地址，每个 CPU 占用 2 页
 #define VM_BASE         (CPU_BASE + (MAX_NUM_CPU * CPU_SIZE)) // VM 的基地址
-#define VM_SIZE         0x60000000      // size: 1.5GB, 再大就会出现问题
+#define VM_SIZE         0x60000000      // size: 1.5GB, 不能超过2GB，否则会造成地址空间不足
 #define RQ_REGION_SIZE  0x10000000      // size: 256MB
 
 #define CPU_STACK_OFF   PAGE_SIZE
